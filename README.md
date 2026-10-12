@@ -62,17 +62,35 @@ El test `accepted_values` falla y gold no se reconstruye.
 Requisitos: Terraform 1.6 o superior, y permisos en el proyecto para crear service accounts,
 pools de Workload Identity, Cloud Run, Scheduler, Artifact Registry y datasets.
 
-```bash
-# Bucket para guardar el state (solo la primera vez)
-gcloud storage buckets create gs://<proyecto>-tfstate --location=US --uniform-bucket-level-access
+### Preparación (una sola vez, con gcloud)
 
+Terraform no puede crear estas dos cosas porque las necesita para arrancar:
+
+```bash
+# API que Terraform usa para dar permisos a nivel de proyecto
+gcloud services enable cloudresourcemanager.googleapis.com --project <proyecto>
+
+# Bucket donde Terraform guarda su state, con versionado por si se daña
+gcloud storage buckets create gs://<proyecto>-tfstate --project <proyecto> --location=US --uniform-bucket-level-access
+gcloud storage buckets update gs://<proyecto>-tfstate --versioning
+```
+
+### Crear la infraestructura
+
+```bash
 cd terraform
 cp terraform.tfvars.example terraform.tfvars   # edita project_id y github_repo
 terraform init -backend-config="bucket=<proyecto>-tfstate"
-terraform plan
-terraform apply
+terraform plan -out=tfplan                     # revisa: debe decir "0 to destroy"
+terraform apply tfplan                         # aplica exactamente lo revisado
 terraform output github_variables
 ```
+
+Si `apply` falla a mitad de camino (por ejemplo, por un error de red o porque una API
+recién activada aún no responde), vuelve a correr `terraform plan -out=tfplan` y
+`terraform apply tfplan`: solo crea lo que faltó.
+
+`.terraform.lock.hcl` fija la versión del proveedor de Google; súbelo a git junto con los `.tf`.
 
 Terraform crea:
 - Seis datasets: los de prod (`mkt_dbt_*`) y los de CI (`mkt_dbt_ci_*`).
