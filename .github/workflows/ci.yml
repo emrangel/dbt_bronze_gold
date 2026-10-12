@@ -1,0 +1,50 @@
+name: ci
+
+# En cada PR: corre dbt completo contra los datasets de CI y valida Terraform
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  id-token: write   # necesario para Workload Identity Federation
+
+concurrency:
+  group: dbt-ci     # los PR comparten datasets de CI: uno a la vez
+  cancel-in-progress: false
+
+jobs:
+  dbt:
+    runs-on: ubuntu-latest
+    env:
+      DBT_PROFILES_DIR: profiles
+      GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+      BQ_LOCATION: ${{ vars.BQ_LOCATION }}
+      DBT_CI_DATASET: ${{ vars.DBT_CI_DATASET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOYER_SA }}
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.0"
+          enable-cache: true
+
+      - run: uv sync --locked
+      - run: uv run dbt deps
+      - run: uv run dbt build --target ci
+
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false
+      - run: terraform validate

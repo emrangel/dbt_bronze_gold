@@ -1,0 +1,35 @@
+name: 'dbt_bronze_gold'
+version: '1.0.0'
+profile: 'dbt_bronze_gold'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+clean-targets: ["target", "dbt_packages"]
+
+# Cada capa va a su propio dataset: <dataset_del_target>_bronze, _silver, _gold
+seeds:
+  dbt_bronze_gold:
+    +schema: bronze
+    bronze_meta_ads:
+      # En bronze todo llega como texto, igual que un dump crudo de Adverity
+      +column_types:
+        date: string
+        campaign_id: string
+        campaign_name: string
+        country: string
+        impressions: string
+        clicks: string
+        spend: string
+        _loaded_at: string
+
+models:
+  dbt_bronze_gold:
+    silver:
+      +schema: silver
+      +materialized: view
+    gold:
+      +schema: gold
+      +materialized: table

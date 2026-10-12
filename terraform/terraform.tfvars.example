@@ -1,0 +1,10 @@
+# cp terraform.tfvars.example terraform.tfvars
+project_id  = "emra-co"
+github_repo = "emrangel/dbt_bronze_gold"
+
+# Opcionales
+# region              = "us-central1"
+# bq_location         = "US"
+# schedule            = "0 6 * * *"   # 6:00 a.m. Bogotá
+# prod_dataset_prefix = "mkt_dbt"
+# source_datasets     = ["bronze"]    # tu bronze real de Adverity, solo lectura

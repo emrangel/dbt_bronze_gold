@@ -1,0 +1,17 @@
+# dbt
+target/
+dbt_packages/
+logs/
+**/.user.yml
+package-lock.yml
+/profiles.yml
+
+# Python
+.venv/
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl.bak
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/terraform.tfvars
